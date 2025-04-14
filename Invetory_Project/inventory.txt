@@ -1,2 +1,7 @@
-Banana,4,0.75
-Apple,12,0.50
+banana,12,1.00
+apple,3,0.75
+grape,4,0.50
+orange,40,0.80
+black berry,30,0.20
+chocolate,3,2.50
+peanut butter,7,2.80
