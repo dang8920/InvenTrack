@@ -26,11 +26,11 @@ void getUserData(char currentID[], char currentPassword[]);
 void overview();
 void editUsers();
 void editInventories(int privilege, char name[]);
-    void displayInventory();
-    void addItem();
-    void updateItem();
-    void deleteItem();
-    void saveInventory();
+    void displayInventory(int privilege, char name[]);
+    void addItem(int privilege, char name[]);
+    void updateItem(int privilege, char name[]);
+    void deleteItem(int privilege, char name[]);
+    void saveInventory(int privilege, char name[]);
 
 void getPassword(char *password, int maxLength); // Allows users to enter their password without having other people seeing
 int getIntInput(const char *prompt);
@@ -175,29 +175,33 @@ void editUsers(){
 void editInventories(int privilege, char name[]){
     int action = 0;
 
-    printf("1) Display Inventory\n2) Add New Items\n3) Update Exsisting Items\n4) Delete Exsisting Items\n5) Back\n\n");
+    printf("1) Display Inventory\n2) Add New Items\n3) Update Exsisting Items\n4) Delete Exsisting Items\n5) Back\n6) Exit Application\n\n");
     action = getIntInput("Enter one of the given options: ");
 
     switch(action){
         case 1:
             printf("\n");
-            displayInventory();
+            displayInventory(privilege, name);
             break;
         case 2:
             printf("\n");
-            addItem();
+            addItem(privilege, name);
             break;
         case 3:
             printf("\n");
-            updateItem();
+            updateItem(privilege, name);
             break;
         case 4:
             printf("\n");
-            deleteItem();
+            deleteItem(privilege, name);
             break;
         case 5:
             printf("\n");
             menu(privilege, name);
+            break;
+        case 6:
+            printf("\n");
+            exitApp();
             break;
         default:
             clearConsole();
@@ -207,13 +211,14 @@ void editInventories(int privilege, char name[]){
     }
 }
 
-void displayInventory(){
+void displayInventory(int privilege, char name[]){
     clearConsole();
     FILE *inv;
     inv = fopen("inventory.txt", "r");
 
     if(inv == NULL){
         printf("An issue occurd while attempting to open the file.\n");
+        editInventories(privilege, name);
         return;
     }
 
@@ -228,22 +233,77 @@ void displayInventory(){
 
     fclose(inv);
 
+    char key;
+    while(1){
+        printf("Enter b to go back: ");
+        scanf("%c", &key);
+
+        if(key == 'b' || key == 'B'){
+            clearConsole();
+            editInventories(privilege, name);
+            break;
+        } else {
+            printf("Invalid input\n");
+        }
+    }
     
 }
 
-void addItem(){
+void addItem(int privilege, char name[]){
+    clearConsole();
+
+    FILE *inv;
+    inv = fopen("inventory.txt", "a+");
+
+    if(inv == NULL){
+        printf("Error connecting to inventory file.\n");
+        editInventories(privilege, name);
+        return;
+    }
+
+    char item[50];
+    int quantity;
+    float cost;
+    printf("Enter name of item: ");
+    fgets(item, 50, stdin);
+    item[strcspn(item, "\n")] = '\0';
+
+    printf("Enter current quantity: ");
+    scanf("%d", &quantity);
+
+    printf("Enter the retail price of the item: $");
+    scanf("%f", &cost);
+
+    fprintf(inv, "%s,%d,%.2f\n", item, quantity, cost);
+    fclose(inv);
+
+    char proceed;
+    while(1){
+        printf("Would you like to enter another item? (y/n): ");
+        scanf("%c", &proceed);
+        if(proceed == 'Y' || proceed == 'y'){
+            clearConsole();
+            addItem(privilege, name);
+            break;
+        } else if(proceed == 'N' || proceed == 'n'){
+            clearConsole();
+            editInventories(privilege, name);
+            break;
+        } else {
+            printf("Invalid input\n");
+        }
+    }
+}
+
+void updateItem(int privilege, char name[]){
 
 }
 
-void updateItem(){
+void deleteItem(int privilege, char name[]){
 
 }
 
-void deleteItem(){
-
-}
-
-void saveInventory(){
+void saveInventory(int privilege, char name[]){
 
 }
 
