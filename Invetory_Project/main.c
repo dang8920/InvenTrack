@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 
 #ifdef _WIN32
@@ -264,39 +265,107 @@ void addItem(int privilege, char name[]){
     char item[50];
     int quantity;
     float cost;
+    char input[100];
+
+    // Read item name
     printf("Enter name of item: ");
-    fgets(item, 50, stdin);
-    item[strcspn(item, "\n")] = '\0';
+    if(fgets(item, sizeof(item), stdin) != NULL){
+        item[strcspn(item, "\n")] = '\0'; // remove newline
+    }
 
     printf("Enter current quantity: ");
-    scanf("%d", &quantity);
+    if(fgets(input, sizeof(input), stdin) != NULL){
+        sscanf(input, "%d", &quantity);
+    }
 
     printf("Enter the retail price of the item: $");
-    scanf("%f", &cost);
+    if(fgets(input, sizeof(input), stdin) != NULL){
+        sscanf(input, "%f", &cost);
+    }
 
     fprintf(inv, "%s,%d,%.2f\n", item, quantity, cost);
     fclose(inv);
 
     char proceed;
     while(1){
-        printf("Would you like to enter another item? (y/n): ");
-        scanf("%c", &proceed);
-        if(proceed == 'Y' || proceed == 'y'){
-            clearConsole();
-            addItem(privilege, name);
-            break;
-        } else if(proceed == 'N' || proceed == 'n'){
-            clearConsole();
-            editInventories(privilege, name);
-            break;
-        } else {
-            printf("Invalid input\n");
+        printf("Would you like to add another item? (y/n): ");
+        if(fgets(input, sizeof(input), stdin) != NULL){
+            if(sscanf(input, " %c", &proceed) == 1){
+                if(tolower(proceed) == 'y'){
+                    clearConsole();
+                    addItem(privilege, name);
+                    break;
+                } else if(tolower(proceed) == 'n'){
+                    clearConsole();
+                    editInventories(privilege, name);
+                    break;
+                } else {
+                    printf("Invalid input\n");
+                }
+            }
         }
     }
 }
 
 void updateItem(int privilege, char name[]){
+    clearConsole();
 
+    char targetItem[50];
+    printf("Enter the name of the item to update: ");
+    fgets(targetItem, sizeof(targetItem), stdin);
+    targetItem[strcspn(targetItem, "\n")] = '\0';
+
+    FILE *inv = fopen("inventory.txt", "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    if(inv == NULL || temp == NULL){
+        printf("Error opening files.\n");
+        return;
+    }
+
+    char item[50];
+    char input[100];
+    char symbol;
+    int quantity;
+    float cost;
+    int found = 0;
+    while(fscanf(inv, "%[^,],%d,%f\n", item, &quantity, &cost) == 3){
+        if(strcmp(item, targetItem) == 0){
+            found = 1;
+            printf("Item found.\nEnter updated quantity or symbol (+/-): ");
+            if(fgets(input, sizeof(input), stdin) != NULL){
+                if(sscanf(input, "%d", &quantity) == 1){} 
+                else if(sscanf(input, "%c", &symbol) == 1){
+                    if(symbol == '+'){
+                        quantity++;
+                    } else if(symbol == '-'){
+                        quantity--;
+                    } else {
+                        printf("Invalid input. Disregarding changes.\n");
+                    }
+                }
+            }
+            printf("Enter updated price: $");
+            scanf("%f", &cost);
+            getchar(); // Consume newline
+
+            fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
+        } else {
+            fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
+        }
+    }
+
+    fclose(inv);
+    fclose(temp);
+
+    remove("inventory.txt");
+    rename("temp.txt", "inventory.txt");
+
+    if(!found){
+        printf("Item not found.\n\n");
+    } else {
+        printf("Item updated successfully.\n");
+    }
 }
 
 void deleteItem(int privilege, char name[]){
