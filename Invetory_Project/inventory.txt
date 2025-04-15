@@ -1,3 +1,4 @@
-sugar,16,3.00
-banana,11,1.20
-apple,21,1.00
+sugar,4,5.00
+feastables,200,1.25
+Xbox Controller,2,60.00
+Logitech Mouse,1,120.00
