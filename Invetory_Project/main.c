@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <windows.h>
 
 #ifdef _WIN32
 #include <conio.h>
@@ -15,15 +16,13 @@
 #define MANAGER 2
 #define EMPLOYEE 3
 
-#define CLEAR_CONSOLE 1
-#define KEEP_CONSOLE 0
-
 #define STR_LEN 50
 
-void login(int clearOption);
+void login();
 void exitApp();
 void clearConsole();
 void delay(int number_of_seconds);
+void flushInput();
 
 void getUserData(char currentID[], char currentPassword[]);
 void overview();
@@ -40,6 +39,7 @@ void editInventories(int privilege, char user[]);
 
 void getPassword(char *password, int maxLength); // Allows users to enter their password without having other people seeing
 int getIntInput(const char *prompt);
+char yesOrNo(const char *prompt);
 
 void menu(int privilege, char user[]);
 void adminMenu(int privilege, char user[]);
@@ -59,26 +59,24 @@ struct Inventory{
 };
 
 int main(){
-    struct user current;
-    current.role = ADMIN;
-    login(CLEAR_CONSOLE);
+    clearConsole();
+    login();
     
     return 0;
 }
 
-void login(int clearOption){
-    if(clearOption == 1){
-        clearConsole();
-    }
+void login(){
+    char currentID[STR_LEN], currentPassword[STR_LEN];
 
-    char currentId[10];
-    char currentPassword[STR_LEN];
-    printf("Enter id: ");
-    scanf("%s", currentId);
+    printf("Enter ID: ");
+    fgets(currentID, STR_LEN, stdin);
+    currentID[strcspn(currentID, "\n")] = '\0';
 
     printf("Enter password: ");
-    getPassword(currentPassword, STR_LEN);
-    getUserData(currentId, currentPassword);
+    fgets(currentPassword, STR_LEN, stdin);
+    currentPassword[strcspn(currentPassword, "\n")] = '\0';
+
+    getUserData(currentID, currentPassword);
 }
 
 void exitApp(){
@@ -106,6 +104,11 @@ void delay(int number_of_seconds)
 		;
 }
 
+void flushInput(){
+    int ch;
+    while((ch = getchar()) != '\n' && ch != EOF);
+}
+
 void getUserData(char currentID[], char currentPassword[]){
     FILE *userFile;
     userFile = fopen("user_database.txt", "r");
@@ -118,7 +121,9 @@ void getUserData(char currentID[], char currentPassword[]){
         delay(1);
         printf("1...");
         delay(1);
-        login(CLEAR_CONSOLE);
+
+        clearConsole();
+        login();
         return;
     }
 
@@ -133,14 +138,15 @@ void getUserData(char currentID[], char currentPassword[]){
         }
     }
 
+    fclose(userFile);
+
     if(found){
         menu(role, name);
     } else {
         printf("Invalid ID or Password\nTry again\n\n");
-        login(KEEP_CONSOLE);
+        login();
     }
 
-    fclose(userFile);
 }
 
 void overview(){
@@ -190,6 +196,7 @@ void editUsers(int privilege, char user[]){
 
 void displayUser(int privilege, char user[]){
 
+    
 }
 
 void addUser(int privilege, char user[]){
@@ -201,118 +208,193 @@ void addUser(int privilege, char user[]){
         return;
     }
 
-    struct user newUser;
+    char buffer[STR_LEN];
+    char name[STR_LEN], surname[STR_LEN], id[STR_LEN], password[STR_LEN];
+    int role;
+
     printf("Enter first name: ");
-    scanf("%s", newUser.name);
+    fgets(name, STR_LEN, stdin);
+    name[strcspn(name, "\n")] = '\0';
 
     printf("Enter last name: ");
-    scanf("%s", newUser.surname);
+    fgets(surname, STR_LEN, stdin);
+    surname[strcspn(surname, "\n")] = '\0';
 
     printf("Enter ID: ");
-    scanf("%s", newUser.id);
+    fgets(id, STR_LEN, stdin);
+    id[strcspn(id, "\n")] = '\0';
 
     printf("Enter password: ");
-    scanf("%s", newUser.password);
+    fgets(password, STR_LEN, stdin);
+    password[strcspn(password, "\n")] = '\0';
 
-    printf("Enter role: ");
-    scanf("%d", &newUser.role);
+    role = getIntInput("Enter role (numeric): ");
 
-    printf("\n");
-    fprintf(userFile, "%s,%s,%s,%s,%d\n", newUser.id, newUser.name, newUser.surname, newUser.password, newUser.role);
-
+    fprintf(userFile, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
     fclose(userFile);
+
+    printf("User added: %s %s (%s) role=%d\n", name, surname, id, role);
+
+    char answer = yesOrNo("Would you like to add another user?");
+    if(answer == 'y'){
+        clearConsole();
+        addUser(privilege, user);
+    } else if(answer == 'n'){
+        clearConsole();
+        editUsers(privilege, user);
+    } else {
+        printf("Invalid input. Returning to main menu.\n\n");
+        menu(privilege, user);
+    }
 }
 
 void updateUser(int privilege, char user[]){
-    
     char targetID[STR_LEN];
     printf("Search ID: ");
-    fgets(targetID, sizeof(targetID), stdin);
+    fgets(targetID, STR_LEN, stdin);
     targetID[strcspn(targetID, "\n")] = '\0';
 
-    FILE *users;
-    FILE *temp;
+    FILE *userFile = fopen("user_database.txt", "r+");
+    FILE *temp = fopen("temp.txt", "w+");
 
-    users = fopen("user_database.txt", "r");
-    temp = fopen("temp.txt", "w");
+    if(userFile == NULL || temp == NULL){
+        perror("Error opening files");
+        return;
+    }
 
     int found = 0, role;
-    char id[STR_LEN], name[STR_LEN], surname[STR_LEN], password[STR_LEN], input1[STR_LEN], input2[STR_LEN];
-    while(fscanf(users, "%[^,],%[^,],%[^,],%[^,],%d\n", id, name, surname, password, &role) == 5){
+    char id[STR_LEN], name[STR_LEN], surname[STR_LEN], password[STR_LEN];
+    char input1[STR_LEN], input2[STR_LEN];
+
+    while(fscanf(userFile, "%[^,],%[^,],%[^,],%[^,],%d\n", id, name, surname, password, &role) == 5){
         if(strcmp(targetID, id) == 0){
             found = 1;
-            printf("Currently editing %s\'s profile\n1) Change ID\n2) Change Name\n3) Change Password\n4) Change Role\n5) Cancel\n\n", name);
-            int action = getIntInput("Enter one of the given options: ");
+            printf("\nCurrently editing %s's profile\n", name);
+            printf("1) Change ID\n2) Change Name\n3) Change Password\n4) Change Role\n5) Cancel\n");
+
+            int action = getIntInput("Enter an option: ");
 
             switch(action){
                 case 1:
-                    printf("Enter NEW ID number: ");
-                    fgets(input1, sizeof(input1), stdin);
+                    printf("Enter NEW ID: ");
+                    fgets(input1, STR_LEN, stdin);
                     input1[strcspn(input1, "\n")] = '\0';
 
-                    printf("Confirm ID number: ");
-                    fgets(input2, sizeof(input2), stdin);
+                    printf("Confirm NEW ID: ");
+                    fgets(input2, STR_LEN, stdin);
                     input2[strcspn(input2, "\n")] = '\0';
 
                     if(strcmp(input1, input2) == 0){
-                        fprintf(temp, "%s,%s,%s,%s,%d\n", input1, name, surname, password, role);
+                        strcpy(id, input1);
+                        printf("ID successfully updated.\n");
+                    } else {
+                        printf("IDs do not match. Keeping old ID.\n");
                     }
                     break;
                 case 2:
-                    printf("Enter First Name: ");
-                    fgets(input1, sizeof(input1), stdin);
-                    input1[strcspn(input1, "\n")] = '\0';
+                    printf("Enter NEW First Name: ");
+                    fgets(name, STR_LEN, stdin);
+                    name[strcspn(name, "\n")] = '\0';
 
-                    printf("Enter Last Name: ");
-                    fgets(input2, sizeof(input2), stdin);
-                    input2[strcspn(input2, "\n")] = '\0';
+                    printf("Enter NEW Last Name: ");
+                    fgets(surname, STR_LEN, stdin);
+                    surname[strcspn(surname, "\n")] = '\0';
 
-                    fprintf(temp, "%s,%s,%s,%s,%d\n", id, input1, input2, password, role);
+                    printf("First and last name successfully updated.\n");
                     break;
                 case 3:
                     printf("Enter NEW password: ");
-                    fgets(input1, sizeof(input1), stdin);
+                    fgets(input1, STR_LEN, stdin);
                     input1[strcspn(input1, "\n")] = '\0';
 
                     printf("Confirm NEW password: ");
-                    fgets(input2, sizeof(input2), stdin);
+                    fgets(input2, STR_LEN, stdin);
                     input2[strcspn(input2, "\n")] = '\0';
 
                     if(strcmp(input1, input2) == 0){
-                        fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, input1, role);
+                        strcpy(password, input1);
+                        printf("Password successfully updated.\n");
+                    } else {
+                        printf("Passwords do not match. Keeping old password.\n");
                     }
                     break;
                 case 4:
-                    printf("Enter NEW role: ");
-                    scanf("%d", &role);
-                    fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
+                    role = getIntInput("Enter NEW role (numeric): ");
+                    printf("Role successfully updated.\n");
                     break;
                 case 5:
-                    fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
+                    printf("No changes made.\n");
                     break;
                 default:
-                    fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
+                    printf("Invalid option. No changes made.\n");
                     break;
             }
-        } else {
-            fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
         }
+
+        fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
     }
 
-    fclose(users);
+    fclose(userFile);
     fclose(temp);
 
     remove("user_database.txt");
     rename("temp.txt", "user_database.txt");
 
-    if(!found){
-        printf("User not found.\n");
+    if(yesOrNo("Would you like to update another profile?") == 'y'){
+        clearConsole();
         updateUser(privilege, user);
+    } else {
+        clearConsole();
+        editUsers(privilege, user);
     }
 }
 
 void deleteUser(int privilege, char user[]){
+    
+    FILE *userFile;
+    FILE *temp;
+    userFile = fopen("user_database.txt", "r+");
+    temp = fopen("temp.txt", "w+");
+    
+    char targetID[STR_LEN], id[STR_LEN], name[STR_LEN], surname[STR_LEN], password[STR_LEN], tempName[STR_LEN], input[STR_LEN];
+    int role, found = 0;
+    printf("Enter the ID number of the user to be deleted: ");
+    if(fgets(targetID, STR_LEN, stdin) != NULL){
+        targetID[strcspn(targetID, "\n")] = '\0';
 
+        while(fscanf(userFile, "%[^,],%[^,],%[^,],%[^,],%d\n", id, name, surname, password, &role) == 5){
+            if(strcmp(targetID, id) == 0){
+                found = 1;
+                strcpy(tempName, name);
+                continue;
+            } else {
+                fprintf(temp, "%s,%s,%s,%s,%d\n", id, name, surname, password, role);
+            }
+        }
+    }
+
+    fclose(userFile);
+    fclose(temp);
+
+    remove("user_database.txt");
+    rename("temp.txt", "user_database.txt");
+
+    if(found){
+        printf("%s\'s data has been successfully deleted.\n", tempName);
+        if(yesOrNo("Woul you like to delete another user?") == 'y'){
+            clearConsole();
+            deleteUser(privilege, user);
+        } else {
+            clearConsole();
+            editUsers(privilege, user);
+        }
+    } else {
+        if(yesOrNo("User not found. Would you like to try again? ") == 'y'){
+            deleteUser(privilege, user);
+        } else {
+            editUsers(privilege, user);
+        }
+    }
 }
 
 void editInventories(int privilege, char user[]){
@@ -382,15 +464,10 @@ void displayInventory(int privilege, char user[]){
 
     char key;
     while(1){
-        printf("Enter b to go back: ");
-        scanf("%c", &key);
-
-        if(key == 'b' || key == 'B'){
+        if(yesOrNo("Would you like to go back to the previous page?") == 'y'){
             clearConsole();
             editInventories(privilege, user);
             break;
-        } else {
-            printf("Invalid input\n");
         }
     }
     
@@ -415,7 +492,7 @@ void addItem(int privilege, char user[]){
     // Read item name
     printf("Enter name of item: ");
     if(fgets(item, sizeof(item), stdin) != NULL){
-        item[strcspn(item, "\n")] = '\0'; // remove newline
+        item[strcspn(item, "\n")] = '\0';
     }
 
     printf("Enter current quantity: ");
@@ -432,23 +509,12 @@ void addItem(int privilege, char user[]){
     fclose(inv);
 
     char proceed;
-    while(1){
-        printf("Would you like to add another item? (y/n): ");
-        if(fgets(input, sizeof(input), stdin) != NULL){
-            if(sscanf(input, " %c", &proceed) == 1){
-                if(tolower(proceed) == 'y'){
-                    clearConsole();
-                    addItem(privilege, user);
-                    break;
-                } else if(tolower(proceed) == 'n'){
-                    clearConsole();
-                    editInventories(privilege, user);
-                    break;
-                } else {
-                    printf("Invalid input\n");
-                }
-            }
-        }
+    if(yesOrNo("Would you like to add another item?") == 'y'){
+        clearConsole();
+        addItem(privilege, user);
+    } else {
+        clearConsole();
+        editInventories(privilege, user);
     }
 }
 
@@ -490,8 +556,9 @@ void updateItem(int privilege, char user[]){
                 }
             }
             printf("Enter updated price: $");
-            scanf("%f", &cost);
-            getchar(); // Consume newline
+            if(fgets(input, STR_LEN, stdin) != NULL){
+                sscanf(input, "%f", &cost);
+            }
 
             fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
         } else {
@@ -509,6 +576,13 @@ void updateItem(int privilege, char user[]){
         printf("Item not found.\n\n");
     } else {
         printf("Item updated successfully.\n");
+        if(yesOrNo("Would you like to update another item?") == 'y'){
+            clearConsole();
+            updateItem(privilege, user);
+        } else {
+            clearConsole();
+            editInventories(privilege, user);
+        }
     }
 }
 
@@ -538,18 +612,11 @@ void deleteItem(int privilege, char user[]){
     while(fscanf(inv, "%[^,],%d,%f\n", item, &quantity, &cost) == 3){
         if(strcmp(targetItem, item) == 0){
             found = 1;
-            printf("Please confirm the deletion of: %s  (y/n): ", item);
-            if(fgets(input, sizeof(input), stdin) != NULL){
-                sscanf(input, " %c", &confirmation);
-                if(tolower(confirmation) == 'y'){
-                    continue;
-                } else if(tolower(confirmation) == 'n'){
-                    fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
-                    printf("%s successfully deleted.\n");
-                } else {
-                    printf("Invalid input, aborting deletion.\n");
-                    fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
-                }
+            if(yesOrNo("Are you sure you want to delete?") == 'y'){
+                printf("%s successfully deleted.\n");
+                continue;
+            } else {
+                fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
             }
         } else {
             fprintf(temp, "%s,%d,%.2f\n", item, quantity, cost);
@@ -564,25 +631,24 @@ void deleteItem(int privilege, char user[]){
 
     if(!found){
         while(1){
-            printf("Item not found.\nWould you like to try again? (y/n): ");
-            if(fgets(input, sizeof(input), stdin) != NULL){
-                sscanf(input, " %c", &confirmation);
-                if(tolower(confirmation) == 'y'){
-                    clearConsole();
-                    deleteItem(privilege, user);
-                    break;
-                } else if(tolower(confirmation) == 'n'){
-                    clearConsole();
-                    editInventories(privilege, user);
-                    break;
-                } else {
-                    printf("\tInvalid input.\n");
-                }
+            if(yesOrNo("Item not found.\nWould you like to try again?") == 'y'){
+                clearConsole();
+                deleteItem(privilege, user);
+                break;
+            } else {
+                clearConsole();
+                editInventories(privilege, user);
+                break;
             }
         }
     } else {
-        clearConsole();
-        editInventories(privilege, user);
+        if(yesOrNo("Would you like to delete another item?") == 'y'){
+            clearConsole();
+            deleteItem(privilege, user);
+        } else {
+            clearConsole();
+            editInventories(privilege, user);
+        }
     }
 }
 
@@ -634,26 +700,37 @@ void getPassword(char *password, int maxLength){
 }
 
 int getIntInput(const char *prompt){
+    char input[STR_LEN];
     int value;
-    int result;
 
     while(1){
         printf("%s", prompt);
-
-        result = scanf("%d", &value);
-
-        if(result == 1){
-            while(getchar() != '\n');
-            return value;
-        } else {
-            while(getchar() != '\n');
-            printf("Invalid input. Please enter a number.\n");
+        if(fgets(input, STR_LEN, stdin) != NULL){
+            if(sscanf(input, "%d", &value) == 1){
+                return value;
+            }
         }
+        printf("Invalid input. Please enter a valid number.\n");
+    }
+}
+
+char yesOrNo(const char *prompt){
+    char inputStr[STR_LEN], answer;
+    while(1){
+        printf("%s (y/n): ", prompt);
+        if(fgets(inputStr, STR_LEN, stdin) != NULL){
+            if(sscanf(inputStr, " %c", &answer) == 1){
+                answer = tolower(answer);
+                if(answer == 'y' || answer == 'n'){
+                    return answer;
+                }
+            }
+        }
+        printf("Invalid input. Please enter 'y' or 'n'.\n");
     }
 }
 
 void menu(int privilege, char user[]){
-    clearConsole();
     switch(privilege){
         case ADMIN:
             adminMenu(privilege, user);
@@ -700,6 +777,7 @@ void adminMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("Invalid input. Please enter one of the given numbers.\n");
+            menu(privilege, user);
             break;
     }
 }
@@ -732,6 +810,7 @@ void managerMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("Invalid input. Please enter one of the given numbers.\n");
+            menu(privilege, user);
             break;
     }
 }
@@ -764,6 +843,7 @@ void employeeMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("Invalid input. Please enter one of the given numbers.\n");
+            menu(privilege, user);
             break;
     }
 }

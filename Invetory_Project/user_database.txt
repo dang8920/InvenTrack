@@ -1,4 +1,3 @@
 1002178920,Anthony,Dang,password,1
-1002178921,Devon,Dang,password123,2
-1,admin,admin,1,1
-2,Manager,Manager,2,2
+1,Admin,NA,1,1
+2,Mangaer,NA,2,2
