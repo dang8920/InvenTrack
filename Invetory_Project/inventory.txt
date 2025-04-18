@@ -1,9 +1,10 @@
-sugar,5,3.00
-feastables,200,1.25
-Xbox Controller,2,60.00
-Logitech Mouse,1,120.00
-chicken,4,12.99
-pickleball paddle,2,60.00
-coffee beans,1000,0.04
-filament,300,0.07
-32 oz bottle,2,40.00
+1,Avocado,14,0.71
+2,Lime,190,0.47
+3,Ritz Crackers,30,3.99
+4,Smucker's Uncrustables,20,4.79
+5,Yoplait Yogurt,40,0.99
+6,Snapple Apple,14,8.99
+7,Minute Maid Fruit Juice,23,1.99
+8,Juicy Juice Grape,19,4.79
+9,Cinnamon Toast Crunch Cereal,50,4.59
+10,Frosted Flakes,12,5.99
