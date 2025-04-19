@@ -1,0 +1,7 @@
+1,Banana,1928,0.35
+2,Strawberries,297,2.99
+3,Avocado,2867,0.71
+4,Green Grapes,125,3.99
+5,Yoplait Yogurt,5710,0.99
+6,Snapple - Kiwi Strawberry,29,1.99
+7,Snapple - Apple,307,1.99
