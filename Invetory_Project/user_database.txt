@@ -1,4 +1,0 @@
-14,Anthony,Dang,password,1
-1,Admin,NA,1,1
-2,Mangaer,NA,2,2
-3,Employee,NA,3,3
