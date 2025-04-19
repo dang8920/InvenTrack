@@ -1,0 +1,6 @@
+2,Banana,0,0.35
+3,Strawberries,2,0.00
+4,Avocado,0,0.00
+5,Green Grapes,3,0.00
+6,Limes,0,0.00
+7,Mandarins,38,0.00

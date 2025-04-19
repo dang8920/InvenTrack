@@ -76,7 +76,10 @@ struct Inventory{
 };
 
 int main(){
-    SetConsoleOutputCP(CP_UTF8);
+    #ifdef _WIN32
+        SetConsoleOutputCP(CP_UTF8);
+    #else
+    #endif
     clearConsole();
     login();
     
