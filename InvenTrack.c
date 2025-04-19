@@ -32,33 +32,34 @@ char employee[] = "Employee";
 
 void login();
 void exitApp();
-void clearConsole();
-void delay(int number_of_seconds);
-void flushInput();
+void clearConsole(); // Clears console/terminal to reduce clutter
+void delay(int numberOfSeconds); // Delays the app for any number of seconds
+void flushInput(); // Flushes buffer input to avoid input bugs
 
 void getUserData(char currentID[], char currentPassword[]);
-void editUsers(int privilege, char user[]);
-    void displayUserOption(int privilege, char user[]);
-        void showUsers();
-    void addUser(int privilege, char user[]);
-    void updateUser(int privilege, char user[]);
-    void deleteUser(int privilege, char user[]);
-void editInventories(int privilege, char user[]);
-    void displayBasicInventory();
-    void displayAdvanceInventory();
-    void displayAdvancedInventoryPage(int privilege, char user[]);
-    void addItem(int privilege, char user[]);
-    void updateItem(int privilege, char user[]);
-    void deleteItem(int privilege, char user[]);
+
+void usersPage(int userPrivilege, char user[]);
+    void displayUserOption(int userPrivilege, char user[]);
+        void showUsers(); // Displays a table with the current users
+    void addUser(int userPrivilege, char user[]); // Creates a user profile and saves to the database
+    void updateUser(int userPrivilege, char user[]); // Updates information of current users
+    void deleteUser(int userPrivilege, char user[]); // Deletes any user profile
+
+void editInventory(int userPrivilege, char user[]);
+    void displayInventoryInformation();
+    void inventoryPage(int userPrivilege, char user[]);
+    void addItem(int userPrivilege, char user[]);
+    void updateItem(int userPrivilege, char user[]);
+    void deleteItem(int userPrivilege, char user[]);
 
 void getPassword(char *password, int maxLength); // Allows users to enter their password without having other people seeing
 int getIntInput(const char *prompt);
 char yesOrNo(const char *prompt);
 
-void menu(int privilege, char user[]);
-void adminMenu(int privilege, char user[]);
-void managerMenu(int privilege, char user[]);
-void employeeMenu(int privilege, char user[]);
+void menu(int userPrivilege, char user[]);
+void adminMenu(int userPrivilege, char user[]);
+void managerMenu(int userPrivilege, char user[]);
+void employeeMenu(int userPrivilege, char user[]);
 
 struct User{
     char name[STR_LEN];
@@ -116,16 +117,16 @@ void clearConsole(){
     printf("\e[1;1H\e[2J"); // Clears the console on any OS (Windows or Linux)
 }
 
-void delay(int number_of_seconds)
+void delay(int numberOfSeconds)
 {
 	// Converting time into milli_seconds
-	int milli_seconds = 1000 * number_of_seconds;
+	int milliSeconds = 1000 * numberOfSeconds;
 
 	// Storing start time
-	clock_t start_time = clock();
+	clock_t startTime = clock();
 
-	// looping till required time is not achieved
-	while (clock() < start_time + milli_seconds);
+	// Looping till required time is not achieved
+	while (clock() < startTime + milliSeconds);
 }
 
 void flushInput(){
@@ -171,7 +172,7 @@ void getUserData(char currentID[], char currentPassword[]){
 
 }
 
-void editUsers(int privilege, char user[]){
+void usersPage(int userPrivilege, char user[]){
     clearConsole();
     printf("============ Modify User Profiles 🪪  ============\n");
 
@@ -183,26 +184,26 @@ void editUsers(int privilege, char user[]){
         case 1:
             clearConsole();
             printf("\n");
-            displayUserOption(privilege, user);
+            displayUserOption(userPrivilege, user);
             break;
         case 2:
             clearConsole();
             printf("\n");
-            addUser(privilege, user);
+            addUser(userPrivilege, user);
             break;
         case 3:
             clearConsole();
             printf("\n");
-            updateUser(privilege, user);
+            updateUser(userPrivilege, user);
             break;
         case 4:
             clearConsole();
             printf("\n");
-            deleteUser(privilege, user);
+            deleteUser(userPrivilege, user);
             break;
         case 5:
             clearConsole();
-            menu(privilege, user);
+            menu(userPrivilege, user);
             break;
         case 6:
             exitApp();
@@ -210,11 +211,11 @@ void editUsers(int privilege, char user[]){
         default:
             clearConsole();
             printf("Invalid input.\n\n");
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
     }
 }
 
-void displayUserOption(int privilege, char user[]){
+void displayUserOption(int userPrivilege, char user[]){
     printf("============ Display Users 🪪  ============\n");
 
     FILE *userFile;
@@ -223,16 +224,16 @@ void displayUserOption(int privilege, char user[]){
     if(userFile == NULL){
         perror("❌ Error opening file");
         printf("\n");
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
         return;
     }
 
     struct User getUser;
-    if(privilege == ADMIN){
+    if(userPrivilege == ADMIN){
         while(fscanf(userFile, "%[^,],%[^,],%[^,],%[^,],%d\n", getUser.id, getUser.name, getUser.surname, getUser.password, &getUser.role) == 5){
             printf("Name: %15s %s\tID: %12s\tPassword: %15s\n", getUser.name, getUser.surname, getUser.id, getUser.password);
         }
-    } else if(privilege == MANAGER){
+    } else if(userPrivilege == MANAGER){
         while(fscanf(userFile, "%[^,],%[^,],%[^,],%[^,],%d\n", getUser.id, getUser.name, getUser.surname, getUser.password, &getUser.role) == 5){
             printf("Name: %15s %s\tID: %12s\n", getUser.name, getUser.surname, getUser.id);
         }
@@ -246,7 +247,7 @@ void displayUserOption(int privilege, char user[]){
     while(1){
         if(yesOrNo("Would you like to go back to the previous page?") == 'y'){
             clearConsole();
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
             break;
         } 
     }
@@ -272,7 +273,7 @@ void showUsers(){
     printf("\n\n");
 }
 
-void addUser(int privilege, char user[]){
+void addUser(int userPrivilege, char user[]){
     showUsers();
     printf("============ Adding User 🪪  ============\n");
     printf("Enter -1 to cancel\n\n");
@@ -282,7 +283,7 @@ void addUser(int privilege, char user[]){
 
     if(userFile == NULL){
         perror("❌ Error opening file\n");
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
         return;
     }
 
@@ -333,17 +334,17 @@ void addUser(int privilege, char user[]){
     char answer = yesOrNo("Would you like to add another user?");
     if(answer == 'y'){
         clearConsole();
-        addUser(privilege, user);
+        addUser(userPrivilege, user);
     } else if(answer == 'n'){
         clearConsole();
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
     } else {
         printf("Invalid input. Returning to main menu.\n\n");
-        menu(privilege, user);
+        menu(userPrivilege, user);
     }
 }
 
-void updateUser(int privilege, char user[]){
+void updateUser(int userPrivilege, char user[]){
     showUsers();
     printf("============ Update Users 🪪  ============\n");
 
@@ -357,7 +358,7 @@ void updateUser(int privilege, char user[]){
 
     if(userFile == NULL || temp == NULL){
         perror("❌ Error opening files");
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
         return;
     }
 
@@ -451,14 +452,14 @@ void updateUser(int privilege, char user[]){
 
     if(yesOrNo("Would you like to update another profile?") == 'y'){
         clearConsole();
-        updateUser(privilege, user);
+        updateUser(userPrivilege, user);
     } else {
         clearConsole();
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
     }
 }
 
-void deleteUser(int privilege, char user[]){
+void deleteUser(int userPrivilege, char user[]){
     showUsers();
     printf("============ Delete Users 🪪  ============\n");
     
@@ -469,7 +470,7 @@ void deleteUser(int privilege, char user[]){
 
     if(userFile == NULL || temp == NULL){
         perror("❌ Error opening files");
-        editUsers(privilege, user);
+        usersPage(userPrivilege, user);
         return;
     }
     
@@ -501,24 +502,24 @@ void deleteUser(int privilege, char user[]){
         printf("✅ %s\'s data has been successfully deleted.\n", tempName);
         if(yesOrNo("Would you like to delete another user?") == 'y'){
             clearConsole();
-            deleteUser(privilege, user);
+            deleteUser(userPrivilege, user);
         } else {
             clearConsole();
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
         }
     } else {
         if(yesOrNo("❌ User not found. Would you like to try again? ") == 'y'){
-            deleteUser(privilege, user);
+            deleteUser(userPrivilege, user);
         } else {
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
         }
     }
 }
 
-void editInventories(int privilege, char user[]){
+void editInventory(int userPrivilege, char user[]){
     printf("============ Edit Inventory 📦 ============\n");
     int action = 0;
-    if(privilege == ADMIN){
+    if(userPrivilege == ADMIN){
         printf("1) Display Inventory\n2) Add New Items\n3) Update Exsisting Items\n4) Delete Exsisting Items\n5) Back\n6) Exit Application\n\n");
         action = getIntInput("Enter one of the given options: ");
 
@@ -526,27 +527,27 @@ void editInventories(int privilege, char user[]){
             case 1:
                 clearConsole();
                 printf("\n");
-                displayAdvancedInventoryPage(privilege, user);
+                inventoryPage(userPrivilege, user);
                 break;
             case 2:
                 clearConsole();
                 printf("\n");
-                addItem(privilege, user);
+                addItem(userPrivilege, user);
                 break;
             case 3:
                 clearConsole();
                 printf("\n");
-                updateItem(privilege, user);
+                updateItem(userPrivilege, user);
                 break;
             case 4:
                 clearConsole();
                 printf("\n");
-                deleteItem(privilege, user);
+                deleteItem(userPrivilege, user);
                 break;
             case 5:
                 clearConsole();
                 printf("\n");
-                menu(privilege, user);
+                menu(userPrivilege, user);
                 break;
             case 6:
                 printf("\n");
@@ -555,10 +556,10 @@ void editInventories(int privilege, char user[]){
             default:
                 clearConsole();
                 printf("❌ Invalid input. Enter one of the given numbers.\n");
-                editInventories(privilege, user);
+                editInventory(userPrivilege, user);
                 break;
         }
-    } else if(privilege == MANAGER){
+    } else if(userPrivilege == MANAGER){
         printf("1) Display Inventory\n2) Add New Items\n3) Update Exsisting Items\n4) Delete Exsisting Items\n5) Back\n6) Exit Application\n\n");
         action = getIntInput("Enter one of the given options: ");
 
@@ -566,27 +567,27 @@ void editInventories(int privilege, char user[]){
             case 1:
                 clearConsole();
                 printf("\n");
-                displayAdvancedInventoryPage(privilege, user);
+                inventoryPage(userPrivilege, user);
                 break;
             case 2:
                 clearConsole();
                 printf("\n");
-                addItem(privilege, user);
+                addItem(userPrivilege, user);
                 break;
             case 3:
                 clearConsole();
                 printf("\n");
-                updateItem(privilege, user);
+                updateItem(userPrivilege, user);
                 break;
             case 4:
                 clearConsole();
                 printf("\n");
-                deleteItem(privilege, user);
+                deleteItem(userPrivilege, user);
                 break;
             case 5:
                 clearConsole();
                 printf("\n");
-                menu(privilege, user);
+                menu(userPrivilege, user);
                 break;
             case 6:
                 printf("\n");
@@ -595,7 +596,7 @@ void editInventories(int privilege, char user[]){
             default:
                 clearConsole();
                 printf("❌ Invalid input. Enter one of the given numbers.\n");
-                editInventories(privilege, user);
+                editInventory(userPrivilege, user);
                 break;
         }
     } else {
@@ -606,17 +607,17 @@ void editInventories(int privilege, char user[]){
             case 1:
                 clearConsole();
                 printf("\n");
-                displayAdvancedInventoryPage(privilege, user);
+                inventoryPage(userPrivilege, user);
                 break;
             case 2:
                 clearConsole();
                 printf("\n");
-                updateItem(privilege, user);
+                updateItem(userPrivilege, user);
                 break;
             case 3:
                 clearConsole();
                 printf("\n");
-                menu(privilege, user);
+                menu(userPrivilege, user);
                 break;
             case 4:
                 printf("\n");
@@ -625,31 +626,13 @@ void editInventories(int privilege, char user[]){
             default:
                 clearConsole();
                 printf("❌ Invalid input. Enter one of the given numbers.\n");
-                editInventories(privilege, user);
+                editInventory(userPrivilege, user);
                 break;
         } 
     }
 }
 
-void displayBasicInventory(){
-
-    FILE *inv;
-    inv = fopen(FILE_INVENTORY, "r+");
-
-    if(inv == NULL){
-        perror("❌ Error displaying contents of the file");
-        return;
-    }
-
-    struct Inventory item;
-    while(fscanf(inv, "%d,%[^,],%d,%f\n", &item.index, item.name, &item.quantity, &item.cost) == 4){
-        printf("%5d: %30s\n", item.index, item.name);
-    }
-
-    fclose(inv);
-}
-
-void displayAdvancedInventory(){
+void displayInventoryInformation(){
     FILE *inv;
     inv = fopen(FILE_INVENTORY, "r+");
 
@@ -666,14 +649,14 @@ void displayAdvancedInventory(){
     fclose(inv);
 }
 
-void displayAdvancedInventoryPage(int privilege, char user[]){
+void inventoryPage(int userPrivilege, char user[]){
     printf("============ Inventory 📦 ============\n");
     FILE *inv;
     inv = fopen(FILE_INVENTORY, "r+");
 
     if(inv == NULL){
         perror("❌ Error displaying inventoy items");
-        editInventories(privilege, user);
+        editInventory(userPrivilege, user);
         return;
     }
 
@@ -688,14 +671,14 @@ void displayAdvancedInventoryPage(int privilege, char user[]){
     while(1){
         if(yesOrNo("Would you like to go back to the previous page?") == 'y'){
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             break;
         }
     }
     
 }
 
-void addItem(int privilege, char user[]){
+void addItem(int userPrivilege, char user[]){
     printf("============ Add Items ============\n");
     printf("Enter CANCEL to abort process\n");
 
@@ -706,13 +689,13 @@ void addItem(int privilege, char user[]){
 
     if(inv == NULL || temp == NULL){
         perror("❌ Error connecting to inventory");
-        editInventories(privilege, user);
+        editInventory(userPrivilege, user);
         return;
     }
 
     struct Inventory item;
     char input[STR_LEN];
-
+    item.index = 0;
     while(fscanf(inv, "%d,%[^,],%d,%f\n", &item.index, item.name, &item.quantity, &item.cost) == 4){
         fprintf(temp, "%d,%s,%d,%.2f\n", item.index, item.name, item.quantity, item.cost);
     }
@@ -729,12 +712,12 @@ void addItem(int privilege, char user[]){
             remove(FILE_INVENTORY);
             rename(FILE_TEMP, FILE_INVENTORY);
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             return;
         }
     }
 
-    printf("Enter current quantity: ");
+    printf("Enter quantity: ");
     if(fgets(input, STR_LEN, stdin) != NULL){
         input[strcspn(input, "\n")] = '\0';
         // Cancels adding a new user
@@ -745,14 +728,14 @@ void addItem(int privilege, char user[]){
             remove(FILE_INVENTORY);
             rename(FILE_TEMP, FILE_INVENTORY);
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             return;
         } else {
             sscanf(input, "%d", &item.quantity);
         }
     }
 
-    printf("Enter the retail price of the item: $");
+    printf("Enter the price of the item: $");
     if(fgets(input, STR_LEN, stdin) != NULL){
         input[strcspn(input, "\n")] = '\0';
         // Cancels adding a new user
@@ -763,10 +746,10 @@ void addItem(int privilege, char user[]){
             remove(FILE_INVENTORY);
             rename(FILE_TEMP, FILE_INVENTORY);
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             return;
         } else {
-            sscanf(input, "%d", &item.quantity);
+            sscanf(input, "%f", &item.cost);
         }
     }
 
@@ -782,16 +765,16 @@ void addItem(int privilege, char user[]){
     char proceed;
     if(yesOrNo("Would you like to add another item?") == 'y'){
         clearConsole();
-        addItem(privilege, user);
+        addItem(userPrivilege, user);
     } else {
         clearConsole();
-        editInventories(privilege, user);
+        editInventory(userPrivilege, user);
     }
 }
 
-void updateItem(int privilege, char user[]){
+void updateItem(int userPrivilege, char user[]){
     printf("============ Update Items ============\n");
-    displayAdvancedInventory();
+    displayInventoryInformation();
 
     char targetItem[STR_LEN];
     printf("Enter the name of the item to update: ");
@@ -801,18 +784,18 @@ void updateItem(int privilege, char user[]){
     // Checks current user privileges and enables/disables 
     // item modification accordingly
     int command;
-    if(privilege == ADMIN){
+    if(userPrivilege == ADMIN){
         printf("\n%s selected,\n1) Change Name\n2) Change Quantity\n3) Change Price\n4) Cancel\n\n", targetItem);
         command = getIntInput("Enter one of the given options: ");
         if(command == 4){
-            editInventories(privilege, user); // Previous page
+            editInventory(userPrivilege, user); // Previous page
             return; // Prevents shutdown bugs
         }
-    } else if(privilege == MANAGER){
+    } else if(userPrivilege == MANAGER){
         printf("\n%s selected,\n1) Change Name\n2) Change Quantity\n3) Cancel\n\n", targetItem);
         command = getIntInput("Enter one of the given options: ");
         if(command == 3){
-            editInventories(privilege, user); // Previous page
+            editInventory(userPrivilege, user); // Previous page
             return; // Prevents shutdown bugs
         }
     } else {
@@ -824,7 +807,7 @@ void updateItem(int privilege, char user[]){
 
     if(inv == NULL || temp == NULL){
         perror("❌ Error opening files");
-        editInventories(privilege, user);
+        editInventory(userPrivilege, user);
         return;
     }
 
@@ -876,22 +859,22 @@ void updateItem(int privilege, char user[]){
 
     if(!found){
         printf("❌ Item not found.\n\n");
-        updateItem(privilege, user);
+        updateItem(userPrivilege, user);
     } else {
         printf("\n✅ Item updated successfully.\n");
         if(yesOrNo("Would you like to update another item?") == 'y'){
             clearConsole();
-            updateItem(privilege, user);
+            updateItem(userPrivilege, user);
         } else {
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
         }
     }
 }
 
-void deleteItem(int privilege, char user[]){
+void deleteItem(int userPrivilege, char user[]){
     printf("============ Delete Items ============\n");
-    displayBasicInventory();
+    displayInventoryInformation();
     printf("Enter CANCEL to abort process\n");
 
     char targetItem[STR_LEN];
@@ -907,7 +890,7 @@ void deleteItem(int privilege, char user[]){
 
     if(inv == NULL || temp == NULL){
         perror("❌ Error opening files.");
-        editInventories(privilege, user);
+        editInventory(userPrivilege, user);
         return;
     }
 
@@ -923,7 +906,7 @@ void deleteItem(int privilege, char user[]){
             remove(FILE_INVENTORY);
             rename(FILE_TEMP, FILE_INVENTORY);
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             return;
         }
         if(strcmp(targetItem, item.name) == 0){
@@ -951,21 +934,21 @@ void deleteItem(int privilege, char user[]){
         while(1){
             if(yesOrNo("❌ Item not found.\nWould you like to try again?") == 'y'){
                 clearConsole();
-                deleteItem(privilege, user);
+                deleteItem(userPrivilege, user);
                 break;
             } else {
                 clearConsole();
-                editInventories(privilege, user);
+                editInventory(userPrivilege, user);
                 break;
             }
         }
     } else {
         if(yesOrNo("Would you like to delete another item?") == 'y'){
             clearConsole();
-            deleteItem(privilege, user);
+            deleteItem(userPrivilege, user);
         } else {
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
         }
     }
 }
@@ -1048,16 +1031,16 @@ char yesOrNo(const char *prompt){
     }
 }
 
-void menu(int privilege, char user[]){
-    switch(privilege){
+void menu(int userPrivilege, char user[]){
+    switch(userPrivilege){
         case ADMIN:
-            adminMenu(privilege, user);
+            adminMenu(userPrivilege, user);
             break;
         case MANAGER:
-            managerMenu(privilege, user);
+            managerMenu(userPrivilege, user);
             break;
         case EMPLOYEE:
-            employeeMenu(privilege, user);
+            employeeMenu(userPrivilege, user);
             break;
         default:
             printf("❌ An unexpected error occurd: Permission denied");
@@ -1067,7 +1050,7 @@ void menu(int privilege, char user[]){
     }
 }
 
-void adminMenu(int privilege, char user[]){
+void adminMenu(int userPrivilege, char user[]){
     clearConsole();
     printf("Hello %s 💻🔑\n", user);
     int action = 0;
@@ -1079,11 +1062,11 @@ void adminMenu(int privilege, char user[]){
     switch(action){
         case 1: // Edit Inventories
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             break;
         case 2: // Edit Users
             clearConsole();
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
             break;
         case 3: // Logout
             clearConsole();
@@ -1096,12 +1079,12 @@ void adminMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("❌ Invalid input. Please enter one of the given numbers.\n");
-            menu(privilege, user);
+            menu(userPrivilege, user);
             break;
     }
 }
 
-void managerMenu(int privilege, char user[]){
+void managerMenu(int userPrivilege, char user[]){
     clearConsole();
     printf("Hello %s 💼\n", user);
     int action = 0;
@@ -1113,11 +1096,11 @@ void managerMenu(int privilege, char user[]){
     switch(action){
         case 1: // Edit Inventories
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             break;
         case 2: // Edit Users
             clearConsole();
-            editUsers(privilege, user);
+            usersPage(userPrivilege, user);
             break;
         case 3: // Logout
             clearConsole();
@@ -1130,12 +1113,12 @@ void managerMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("❌ Invalid input. Please enter one of the given numbers.\n");
-            menu(privilege, user);
+            menu(userPrivilege, user);
             break;
     }
 }
 
-void employeeMenu(int privilege, char user[]){
+void employeeMenu(int userPrivilege, char user[]){
     clearConsole();
     printf("Hello %s 🪪\n", user);
     int action = 0;
@@ -1147,7 +1130,7 @@ void employeeMenu(int privilege, char user[]){
     switch(action){
         case 1: // Edit Inventories
             clearConsole();
-            editInventories(privilege, user);
+            editInventory(userPrivilege, user);
             break;
         case 2: // Logout
             clearConsole();
@@ -1160,7 +1143,7 @@ void employeeMenu(int privilege, char user[]){
         default:
             printf("\n");
             printf("❌ Invalid input. Please enter one of the given numbers.\n");
-            menu(privilege, user);
+            menu(userPrivilege, user);
             break;
     }
 }
