@@ -325,7 +325,7 @@ void addUser(int userPrivilege, char user[]){
     printf("Enter ID: ");
     fgets(new.id, STR_LEN, stdin);
     new.id[strcspn(new.id, "\n")] = '\0';
-    if(cancelProcsess(new.id)){
+    if(cancelProcess(new.id)){
         fclose(userFile);
         clearConsole();
         editUser(userPrivilege, user);
