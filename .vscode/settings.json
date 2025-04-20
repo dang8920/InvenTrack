@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "unistd.h": "c",
+        "windows.h": "c",
+        "stdlib.h": "c",
+        "utils.h": "c",
+        "string.h": "c",
+        "inventory.h": "c",
+        "menus.h": "c"
+    }
+}
