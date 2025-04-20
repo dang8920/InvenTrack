@@ -1,1 +1,7 @@
-1,Admin,Lastname,1,1
+1,ADMIN,Lastname,1,1
+1002178920,Anthony,Dang,password,1
+1002142849,Olatunji,Oluwatoki,password,2
+1002218362,Karim,Abdallah,password,2
+1002135577,Ghani,Mohammad,password,2
+2,Manager,Lastname,2,2
+3,Employee,Lastname,3,3

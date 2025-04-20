@@ -530,8 +530,7 @@ void deleteUser(int userPrivilege, char user[]){
         if(strcmp(targetID, "CANCEL") == 0){
             fclose(userFile);
             fclose(temp);
-            remove(FILE_USER_DATABASE);
-            rename(FILE_TEMP, FILE_USER_DATABASE);
+            remove(FILE_TEMP);
             
             clearConsole();
             editUser(userPrivilege, user);
@@ -736,6 +735,7 @@ void inventoryPage(int userPrivilege, char user[]){
 }
 
 void addItem(int userPrivilege, char user[]){
+    showInventoryInformation();
     printf("============ Add Items ============\n");
     printf("Enter CANCEL to cancel\n\n");
 
@@ -830,33 +830,18 @@ void addItem(int userPrivilege, char user[]){
 }
 
 void updateItem(int userPrivilege, char user[]){
-    printf("============ Update Items ============\n");
     showInventoryInformation();
+    printf("\n============ Update Items ============\n");
+    printf("Enter CANCEL to cancel\n");
 
     char targetItem[STR_LEN];
-    printf("Enter the name of the item to update: ");
+    printf("\nEnter the name of the item to update: ");
     fgets(targetItem, sizeof(targetItem), stdin);
     targetItem[strcspn(targetItem, "\n")] = '\0';
-
-    // Checks current user privileges and enables/disables 
-    // item modification accordingly
-    int command;
-    if(userPrivilege == ADMIN){
-        printf("\n%s selected,\n1) Change Name\n2) Change Quantity\n3) Change Price\n4) Cancel\n\n", targetItem);
-        command = getIntInput("Enter one of the given options: ");
-        if(command == 4){
-            editInventory(userPrivilege, user); // Previous page
-            return; // Prevents shutdown bugs
-        }
-    } else if(userPrivilege == MANAGER){
-        printf("\n%s selected,\n1) Change Name\n2) Change Quantity\n3) Cancel\n\n", targetItem);
-        command = getIntInput("Enter one of the given options: ");
-        if(command == 3){
-            editInventory(userPrivilege, user); // Previous page
-            return; // Prevents shutdown bugs
-        }
-    } else {
-        command = CHANGE_QUANTITY;
+    if(cancelProcess(targetItem)){
+        clearConsole();
+        editInventory(userPrivilege, user);
+        return;
     }
 
     FILE *inv = fopen(FILE_INVENTORY, "r");
@@ -875,19 +860,56 @@ void updateItem(int userPrivilege, char user[]){
     while(fscanf(inv, "%d,%[^,],%d,%f\n", &item.index, item.name, &item.quantity, &item.cost) == 4){
         if(strcmp(item.name, targetItem) == 0){
             found = 1;
+            int command;
+            // Checks current user privileges and enables/disables 
+            // item modification accordingly
+            if(userPrivilege == ADMIN){
+                printf("\n%s found,\n1) Change Name\n2) Change Quantity\n3) Change Price\n4) Cancel\n\n", targetItem);
+                command = getIntInput("Enter one of the given options: ");
+                if(command == 4){
+                    editInventory(userPrivilege, user); // Previous page
+                    return; // Prevents shutdown bugs
+                }
+            } else if(userPrivilege == MANAGER){
+                printf("\n%s found,\n1) Change Name\n2) Change Quantity\n3) Cancel\n\n", targetItem);
+                command = getIntInput("Enter one of the given options: ");
+                if(command == 3){
+                    editInventory(userPrivilege, user); // Previous page
+                    return; // Prevents shutdown bugs
+                }
+            } else {
+                command = CHANGE_QUANTITY;
+            }
             switch(command){
                 case CHANGE_NAME:
                     printf("Enter new name: ");
                     if(fgets(item.name, STR_LEN, stdin) != NULL){
                         item.name[strcspn(item.name, "\n")] = '\0';
+                        if(cancelProcess(item.name)){
+                            fclose(inv);
+                            fclose(temp);
+                            remove(FILE_TEMP);
+                            editInventory(userPrivilege, user);
+                            break;
+                            return;
+                        }
                     }
                     break;
                 case CHANGE_QUANTITY:
                     printf("Enter updated quantity: ");
 
                     if(fgets(input, STR_LEN, stdin) != NULL){
-                        if(sscanf(input, "%d", &item.quantity) == 1){} 
-                        else {
+                        input[strcspn(input, "\n")] = '\0';
+                        if(cancelProcess(item.name)){
+                            fclose(inv);
+                            fclose(temp);
+                            remove(FILE_TEMP);
+                            editInventory(userPrivilege, user);
+                            break;
+                            return;
+                        } else if(sscanf(input, "%d", &item.quantity) == 1){
+
+                        } else {
                                 printf("❌ Invalid input. Disregarding changes.\n");
                             }
                         }
@@ -895,7 +917,17 @@ void updateItem(int userPrivilege, char user[]){
                 case CHANGE_PRICE:
                     printf("Enter updated price: $");
                     if(fgets(input, STR_LEN, stdin) != NULL){
-                        sscanf(input, "%f", &item.cost);
+                        input[strcspn(input, "\n")] = '\0';
+                        if(cancelProcess(item.name)){
+                            fclose(inv);
+                            fclose(temp);
+                            remove(FILE_TEMP);
+                            editInventory(userPrivilege, user);
+                            break;
+                            return;
+                        } else {
+                            sscanf(input, "%f", &item.cost);
+                        }
                     }
                     break;
                 default:
@@ -938,6 +970,11 @@ void deleteItem(int userPrivilege, char user[]){
     printf("Enter the name of the item to delete: ");
     fgets(targetItem, sizeof(targetItem), stdin);
     targetItem[strcspn(targetItem, "\n")] = '\0';
+    if(cancelProcess(targetItem)){
+        clearConsole();
+        editInventory(userPrivilege, user);
+        return;
+    }
 
     FILE *inv;
     FILE *temp;
