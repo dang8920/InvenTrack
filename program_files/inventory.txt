@@ -5,3 +5,4 @@
 5,Yoplait Yogurt,5710,0.99
 6,Snapple - Kiwi Strawberry,29,1.99
 7,Snapple - Apple,307,1.99
+8,Controller,3,60.00
