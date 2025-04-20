@@ -35,18 +35,19 @@ void exitApp();
 void clearConsole(); // Clears console/terminal to reduce clutter
 void delay(int numberOfSeconds); // Delays the app for any number of seconds
 void flushInput(); // Flushes buffer input to avoid input bugs
+int cancelProcess(char string[STR_LEN]);
 
 void getUserData(char currentID[], char currentPassword[]);
 
-void usersPage(int userPrivilege, char user[]);
-    void displayUserOption(int userPrivilege, char user[]);
-        void showUsers(); // Displays a table with the current users
+void editUser(int userPrivilege, char user[]);
+    void showUserInformation(); // Displays a table with the current users
+    void userPage(int userPrivilege, char user[]);
     void addUser(int userPrivilege, char user[]); // Creates a user profile and saves to the database
     void updateUser(int userPrivilege, char user[]); // Updates information of current users
     void deleteUser(int userPrivilege, char user[]); // Deletes any user profile
 
 void editInventory(int userPrivilege, char user[]);
-    void displayInventoryInformation();
+    void showInventoryInformation();
     void inventoryPage(int userPrivilege, char user[]);
     void addItem(int userPrivilege, char user[]);
     void updateItem(int userPrivilege, char user[]);
@@ -54,7 +55,7 @@ void editInventory(int userPrivilege, char user[]);
 
 void getPassword(char *password, int maxLength); // Allows users to enter their password without having other people seeing
 int getIntInput(const char *prompt);
-char yesOrNo(const char *prompt);
+char promptYesOrNo(const char *prompt);
 
 void menu(int userPrivilege, char user[]);
 void adminMenu(int userPrivilege, char user[]);
@@ -77,7 +78,10 @@ struct Inventory{
 };
 
 int main(){
-    SetConsoleOutputCP(CP_UTF8);
+    #ifdef _WIN32
+        SetConsoleOutputCP(CP_UTF8);
+    #else
+    #endif
     clearConsole();
     login();
     
@@ -107,10 +111,13 @@ void exitApp(){
     clearConsole();
 
     // Exits the application after a 3 second countdown
+    // fflush(stdout) clears the buffers so that the countdown 
+    // prints correctly
     printf("Exiting InvenTrack in...");
-    printf("3...");delay(1);
-    printf("2...");delay(1);
-    printf("1...");delay(1);
+    printf("3...");fflush(stdout);delay(1);
+    printf("2...");fflush(stdout);delay(1);
+    printf("1...");fflush(stdout);delay(1);
+    printf("\n");
 }
 
 void clearConsole(){
@@ -119,14 +126,11 @@ void clearConsole(){
 
 void delay(int numberOfSeconds)
 {
-	// Converting time into milli_seconds
-	int milliSeconds = 1000 * numberOfSeconds;
-
-	// Storing start time
-	clock_t startTime = clock();
-
-	// Looping till required time is not achieved
-	while (clock() < startTime + milliSeconds);
+	#ifdef _WIN32
+        Sleep(1000 * numberOfSeconds);
+    #else
+        sleep(numberOfSeconds);
+    #endif
 }
 
 void flushInput(){
@@ -134,6 +138,13 @@ void flushInput(){
 
     // Clears the input buffer to avoid input bugs
     while((ch = getchar()) != '\n' && ch != EOF);
+}
+
+int cancelProcess(char string[]){
+    if(strcmp(string, "CANCEL") == 0){
+        return 1;
+    }
+    return 0;
 }
 
 void getUserData(char currentID[], char currentPassword[]){
@@ -172,7 +183,7 @@ void getUserData(char currentID[], char currentPassword[]){
 
 }
 
-void usersPage(int userPrivilege, char user[]){
+void editUser(int userPrivilege, char user[]){
     clearConsole();
     printf("============ Modify User Profiles 🪪  ============\n");
 
@@ -184,7 +195,7 @@ void usersPage(int userPrivilege, char user[]){
         case 1:
             clearConsole();
             printf("\n");
-            displayUserOption(userPrivilege, user);
+            userPage(userPrivilege, user);
             break;
         case 2:
             clearConsole();
@@ -211,11 +222,11 @@ void usersPage(int userPrivilege, char user[]){
         default:
             clearConsole();
             printf("Invalid input.\n\n");
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
     }
 }
 
-void displayUserOption(int userPrivilege, char user[]){
+void userPage(int userPrivilege, char user[]){
     printf("============ Display Users 🪪  ============\n");
 
     FILE *userFile;
@@ -224,7 +235,7 @@ void displayUserOption(int userPrivilege, char user[]){
     if(userFile == NULL){
         perror("❌ Error opening file");
         printf("\n");
-        usersPage(userPrivilege, user);
+        editUser(userPrivilege, user);
         return;
     }
 
@@ -245,15 +256,15 @@ void displayUserOption(int userPrivilege, char user[]){
     fclose(userFile);
 
     while(1){
-        if(yesOrNo("Would you like to go back to the previous page?") == 'y'){
+        if(promptYesOrNo("Would you like to go back to the previous page?") == 'y'){
             clearConsole();
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
             break;
         } 
     }
 }
 
-void showUsers(){
+void showUserInformation(){
     printf("============ Users 🪪  ============\n");
 
     FILE *userFile;
@@ -274,16 +285,16 @@ void showUsers(){
 }
 
 void addUser(int userPrivilege, char user[]){
-    showUsers();
+    showUserInformation();
     printf("============ Adding User 🪪  ============\n");
-    printf("Enter -1 to cancel\n\n");
+    printf("Enter CANCEL to cancel\n\n");
 
     FILE *userFile;
     userFile = fopen(FILE_USER_DATABASE, "a+"); // No need to write or read to the file. We simply add the new user profile based on standard input
 
     if(userFile == NULL){
         perror("❌ Error opening file\n");
-        usersPage(userPrivilege, user);
+        editUser(userPrivilege, user);
         return;
     }
 
@@ -294,21 +305,53 @@ void addUser(int userPrivilege, char user[]){
     printf("Enter first name: ");
     fgets(new.name, STR_LEN, stdin);
     new.name[strcspn(new.name, "\n")] = '\0';
+    if(cancelProcess(new.name)){
+        fclose(userFile);
+        clearConsole();
+        editUser(userPrivilege, user);
+        return;
+    }
 
     printf("Enter last name: ");
     fgets(new.surname, STR_LEN, stdin);
     new.surname[strcspn(new.surname, "\n")] = '\0';
+    if(cancelProcess(new.surname)){
+        fclose(userFile);
+        clearConsole();
+        editUser(userPrivilege, user);
+        return;
+    }
 
     printf("Enter ID: ");
     fgets(new.id, STR_LEN, stdin);
     new.id[strcspn(new.id, "\n")] = '\0';
+    if(cancelProcsess(new.id)){
+        fclose(userFile);
+        clearConsole();
+        editUser(userPrivilege, user);
+        return;
+    }
 
     while(1){
         printf("Enter password: ");
         getPassword(new.password, STR_LEN);
+        if(cancelProcess(new.password)){
+            fclose(userFile);
+            clearConsole();
+            editUser(userPrivilege, user);
+            break;
+            return;
+        }
 
         printf("Confirm password: ");
         getPassword(buffer, STR_LEN);
+        if(cancelProcess(buffer)){
+            fclose(userFile);
+            clearConsole();
+            editUser(userPrivilege, user);
+            break;
+            return;
+        }
 
         if(strcmp(new.password, buffer) == 0){
             break;
@@ -331,34 +374,37 @@ void addUser(int userPrivilege, char user[]){
     }
 
     // Utilized recurrsion to add more users or to go back to the previous menu
-    char answer = yesOrNo("Would you like to add another user?");
+    char answer = promptYesOrNo("Would you like to add another user?");
     if(answer == 'y'){
         clearConsole();
         addUser(userPrivilege, user);
-    } else if(answer == 'n'){
-        clearConsole();
-        usersPage(userPrivilege, user);
     } else {
-        printf("Invalid input. Returning to main menu.\n\n");
-        menu(userPrivilege, user);
+        clearConsole();
+        editUser(userPrivilege, user);
     }
 }
 
 void updateUser(int userPrivilege, char user[]){
-    showUsers();
+    showUserInformation();
     printf("============ Update Users 🪪  ============\n");
+    printf("Enter CANCEL to cancel\n\n");
 
     char targetID[STR_LEN];
     printf("Search ID: ");
     fgets(targetID, STR_LEN, stdin);
     targetID[strcspn(targetID, "\n")] = '\0';
+    if(strcmp(targetID, "CANCEL") == 0){
+        clearConsole();
+        editUser(userPrivilege, user);
+        return;
+    }
 
     FILE *userFile = fopen(FILE_USER_DATABASE, "r+"); // Only reading this file is required
     FILE *temp = fopen(FILE_TEMP, "w+"); // Only writing to this file is required
 
     if(userFile == NULL || temp == NULL){
         perror("❌ Error opening files");
-        usersPage(userPrivilege, user);
+        editUser(userPrivilege, user);
         return;
     }
 
@@ -450,18 +496,19 @@ void updateUser(int userPrivilege, char user[]){
     remove(FILE_USER_DATABASE);
     rename(FILE_TEMP, FILE_USER_DATABASE);
 
-    if(yesOrNo("Would you like to update another profile?") == 'y'){
+    if(promptYesOrNo("Would you like to update another profile?") == 'y'){
         clearConsole();
         updateUser(userPrivilege, user);
     } else {
         clearConsole();
-        usersPage(userPrivilege, user);
+        editUser(userPrivilege, user);
     }
 }
 
 void deleteUser(int userPrivilege, char user[]){
-    showUsers();
+    showUserInformation();
     printf("============ Delete Users 🪪  ============\n");
+    printf("Enter CANCEL to cancel\n\n");
     
     FILE *userFile;
     FILE *temp;
@@ -470,7 +517,7 @@ void deleteUser(int userPrivilege, char user[]){
 
     if(userFile == NULL || temp == NULL){
         perror("❌ Error opening files");
-        usersPage(userPrivilege, user);
+        editUser(userPrivilege, user);
         return;
     }
     
@@ -480,6 +527,16 @@ void deleteUser(int userPrivilege, char user[]){
     printf("Enter the ID number of the user to be deleted: ");
     if(fgets(targetID, STR_LEN, stdin) != NULL){
         targetID[strcspn(targetID, "\n")] = '\0';
+        if(strcmp(targetID, "CANCEL") == 0){
+            fclose(userFile);
+            fclose(temp);
+            remove(FILE_USER_DATABASE);
+            rename(FILE_TEMP, FILE_USER_DATABASE);
+            
+            clearConsole();
+            editUser(userPrivilege, user);
+            return;
+        }
 
         while(fscanf(userFile, "%[^,],%[^,],%[^,],%[^,],%d\n", file.id, file.name, file.surname, file.password, &file.role) == 5){
             if(strcmp(targetID, file.id) == 0){
@@ -500,18 +557,18 @@ void deleteUser(int userPrivilege, char user[]){
 
     if(found){
         printf("✅ %s\'s data has been successfully deleted.\n", tempName);
-        if(yesOrNo("Would you like to delete another user?") == 'y'){
+        if(promptYesOrNo("Would you like to delete another user?") == 'y'){
             clearConsole();
             deleteUser(userPrivilege, user);
         } else {
             clearConsole();
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
         }
     } else {
-        if(yesOrNo("❌ User not found. Would you like to try again? ") == 'y'){
+        if(promptYesOrNo("❌ User not found. Would you like to try again? ") == 'y'){
             deleteUser(userPrivilege, user);
         } else {
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
         }
     }
 }
@@ -632,7 +689,7 @@ void editInventory(int userPrivilege, char user[]){
     }
 }
 
-void displayInventoryInformation(){
+void showInventoryInformation(){
     FILE *inv;
     inv = fopen(FILE_INVENTORY, "r+");
 
@@ -669,7 +726,7 @@ void inventoryPage(int userPrivilege, char user[]){
 
     char key;
     while(1){
-        if(yesOrNo("Would you like to go back to the previous page?") == 'y'){
+        if(promptYesOrNo("Would you like to go back to the previous page?") == 'y'){
             clearConsole();
             editInventory(userPrivilege, user);
             break;
@@ -680,7 +737,7 @@ void inventoryPage(int userPrivilege, char user[]){
 
 void addItem(int userPrivilege, char user[]){
     printf("============ Add Items ============\n");
-    printf("Enter CANCEL to abort process\n");
+    printf("Enter CANCEL to cancel\n\n");
 
     FILE *inv;
     FILE *temp;
@@ -763,7 +820,7 @@ void addItem(int userPrivilege, char user[]){
     rename(FILE_TEMP, FILE_INVENTORY);
 
     char proceed;
-    if(yesOrNo("Would you like to add another item?") == 'y'){
+    if(promptYesOrNo("Would you like to add another item?") == 'y'){
         clearConsole();
         addItem(userPrivilege, user);
     } else {
@@ -774,7 +831,7 @@ void addItem(int userPrivilege, char user[]){
 
 void updateItem(int userPrivilege, char user[]){
     printf("============ Update Items ============\n");
-    displayInventoryInformation();
+    showInventoryInformation();
 
     char targetItem[STR_LEN];
     printf("Enter the name of the item to update: ");
@@ -862,7 +919,7 @@ void updateItem(int userPrivilege, char user[]){
         updateItem(userPrivilege, user);
     } else {
         printf("\n✅ Item updated successfully.\n");
-        if(yesOrNo("Would you like to update another item?") == 'y'){
+        if(promptYesOrNo("Would you like to update another item?") == 'y'){
             clearConsole();
             updateItem(userPrivilege, user);
         } else {
@@ -874,8 +931,8 @@ void updateItem(int userPrivilege, char user[]){
 
 void deleteItem(int userPrivilege, char user[]){
     printf("============ Delete Items ============\n");
-    displayInventoryInformation();
-    printf("Enter CANCEL to abort process\n");
+    showInventoryInformation();
+    printf("Enter CANCEL to cancel\n\n");
 
     char targetItem[STR_LEN];
     printf("Enter the name of the item to delete: ");
@@ -911,7 +968,7 @@ void deleteItem(int userPrivilege, char user[]){
         }
         if(strcmp(targetItem, item.name) == 0){
             found = 1;
-            if(yesOrNo("Are you sure you want to proceed with deletion?") == 'y'){
+            if(promptYesOrNo("Are you sure you want to proceed with deletion?") == 'y'){
                 printf("✅ %s successfully deleted.\n");
                 continue;
             } else {
@@ -932,7 +989,7 @@ void deleteItem(int userPrivilege, char user[]){
 
     if(!found){
         while(1){
-            if(yesOrNo("❌ Item not found.\nWould you like to try again?") == 'y'){
+            if(promptYesOrNo("❌ Item not found.\nWould you like to try again?") == 'y'){
                 clearConsole();
                 deleteItem(userPrivilege, user);
                 break;
@@ -943,7 +1000,7 @@ void deleteItem(int userPrivilege, char user[]){
             }
         }
     } else {
-        if(yesOrNo("Would you like to delete another item?") == 'y'){
+        if(promptYesOrNo("Would you like to delete another item?") == 'y'){
             clearConsole();
             deleteItem(userPrivilege, user);
         } else {
@@ -1015,7 +1072,7 @@ int getIntInput(const char *prompt){
     }
 }
 
-char yesOrNo(const char *prompt){
+char promptYesOrNo(const char *prompt){
     char inputStr[STR_LEN], answer;
     while(1){
         printf("\n➡️  %s (y/n): ", prompt);
@@ -1066,7 +1123,7 @@ void adminMenu(int userPrivilege, char user[]){
             break;
         case 2: // Edit Users
             clearConsole();
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
             break;
         case 3: // Logout
             clearConsole();
@@ -1100,7 +1157,7 @@ void managerMenu(int userPrivilege, char user[]){
             break;
         case 2: // Edit Users
             clearConsole();
-            usersPage(userPrivilege, user);
+            editUser(userPrivilege, user);
             break;
         case 3: // Logout
             clearConsole();
