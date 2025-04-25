@@ -9,16 +9,24 @@
 
 void login(){
     char currentID[STR_LEN], currentPassword[STR_LEN];
+    printf("Enter EXIT to exit application\n\n");
 
     // Promts the user to enter their ID and Password
     printf("Enter ID: ");
     getSanitizedInput(currentID, STR_LEN);
+    if(strcmp(currentID, "EXIT") == 0){
+        exitApp();
+        return;
+    }
 
     printf("Enter password: ");
     // Gets the password, but doesn't show the characters for privacy
     getPassword(currentPassword, STR_LEN);
     currentPassword[strcspn(currentPassword, "\n")] = '\0';
-
+    if(strcmp(currentPassword, "EXIT") == 0){
+        exitApp();
+        return;
+    }
     // Checks the user database for matching ID and Password
     // then opens the corresponding menu depending on the 
     // privilege of the user

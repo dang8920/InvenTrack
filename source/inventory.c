@@ -203,36 +203,49 @@ void addItem(int userPrivilege, char user[]){
         return;
     }
 
-    printf("Enter quantity: ");
-    getSanitizedInput(input, STR_LEN);
-    // Cancels adding a new user
-    if(strcmp(input, "CANCEL") == 0){
-        closeFileSafe(inv, "addItem: inventory database");;
-        closeFileSafe(temp, "addItem: temp file");
-        
-        remove(FILE_INVENTORY);
-        rename(FILE_TEMP, FILE_INVENTORY);
-        clearConsole();
-        editInventory(userPrivilege, user);
-        return;
-    } else {
-        sscanf(input, "%d", &item.quantity);
+    while(1){
+        printf("Enter quantity: ");
+        getSanitizedInput(input, STR_LEN);
+        // Cancels adding a new user
+        if(strcmp(input, "CANCEL") == 0){
+            closeFileSafe(inv, "addItem: inventory database");;
+            closeFileSafe(temp, "addItem: temp file");
+            
+            remove(FILE_INVENTORY);
+            rename(FILE_TEMP, FILE_INVENTORY);
+            clearConsole();
+            editInventory(userPrivilege, user);
+            return;
+        } else {
+            if(sscanf(input, "%d", &item.quantity) == 1){
+                break;
+            } else {
+                printf("❌ Invalid input. Please enter a valid number.\n");
+            }
+
+        }
     }
 
-    printf("Enter the price of the item: $");
-    getSanitizedInput(input, STR_LEN);
-    // Cancels adding a new user
-    if(strcmp(input, "CANCEL") == 0){
-        closeFileSafe(inv, "addItem: inventory database");
-        closeFileSafe(temp, "addItem: temp file");
-        
-        remove(FILE_INVENTORY);
-        rename(FILE_TEMP, FILE_INVENTORY);
-        clearConsole();
-        editInventory(userPrivilege, user);
-        return;
-    } else {
-        sscanf(input, "%f", &item.cost);
+    while(1){
+        printf("Enter the price of the item: $");
+        getSanitizedInput(input, STR_LEN);
+        // Cancels adding a new user
+        if(strcmp(input, "CANCEL") == 0){
+            closeFileSafe(inv, "addItem: inventory database");
+            closeFileSafe(temp, "addItem: temp file");
+            
+            remove(FILE_INVENTORY);
+            rename(FILE_TEMP, FILE_INVENTORY);
+            clearConsole();
+            editInventory(userPrivilege, user);
+            return;
+        } else {
+            if(sscanf(input, "%f", &item.cost) == 1){
+                break;
+            } else {
+                printf("❌ Invalid input. Please enter a valid number.\n");
+            }
+        }
     }
 
     fprintf(temp, "%d,%s,%d,%.2f\n", ++(item.index), item.name, item.quantity, item.cost);
@@ -318,34 +331,43 @@ void updateItem(int userPrivilege, char user[]){
                     }
                     break;
                 case CHANGE_QUANTITY:
-                    printf("Enter updated quantity: ");
-
-                    getSanitizedInput(input, STR_LEN);
-                    if(cancelProcess(item.name)){
-                        closeFileSafe(inv, "updateItem: inventory database");
-                        closeFileSafe(temp, "updateItem: temp file");
-                        remove(FILE_TEMP);
-                        editInventory(userPrivilege, user);
-                        break;
-                        return;
-                    } else if(sscanf(input, "%d", &item.quantity) == 1){
-
-                    } else {
-                            printf("❌ Invalid input. Disregarding changes.\n");
+                    while(1){
+                        printf("Enter updated quantity: ");
+                        getSanitizedInput(input, STR_LEN);
+                        if(cancelProcess(item.name)){
+                            closeFileSafe(inv, "updateItem: inventory database");
+                            closeFileSafe(temp, "updateItem: temp file");
+                            remove(FILE_TEMP);
+                            editInventory(userPrivilege, user);
+                            break;
+                            return;
+                        } else {
+                            if(sscanf(input, "%d", &item.quantity) == 1){
+                                break;
+                            } else {
+                                printf("❌ Invalid input. Please enter a valid number.\n");
+                            }
+                        }
                     }
                     break;
                 case CHANGE_PRICE:
-                    printf("Enter updated price: $");
-                    getSanitizedInput(input, STR_LEN);
-                    if(cancelProcess(item.name)){
-                        closeFileSafe(inv, "updateItem: inventory database");
-                        closeFileSafe(temp, "updateItem: temp file");
-                        remove(FILE_TEMP);
-                        editInventory(userPrivilege, user);
-                        break;
-                        return;
-                    } else {
-                        sscanf(input, "%f", &item.cost);
+                while(1){
+                        printf("Enter updated price: $");
+                        getSanitizedInput(input, STR_LEN);
+                        if(cancelProcess(item.name)){
+                            closeFileSafe(inv, "updateItem: inventory database");
+                            closeFileSafe(temp, "updateItem: temp file");
+                            remove(FILE_TEMP);
+                            editInventory(userPrivilege, user);
+                            break;
+                            return;
+                        } else {
+                            if(sscanf(input, "%f", &item.cost) == 1){
+                                break;
+                            } else {
+                                printf("❌ Invalid input. Please enter a valid number.\n");
+                            }
+                        }
                     }
                     break;
                 default:

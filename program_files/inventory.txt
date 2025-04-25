@@ -6,3 +6,8 @@
 6,Snapple - Kiwi Strawberry,29,1.99
 7,Snapple - Apple,307,1.99
 8,Controller,3,60.00
+9,REI Water Bottles,2,50.00
+10,Duct Tape,4,6.00
+11,GAN Speed Cube,1,70.00
+12,Keyboard,1,70.00
+13,Mouse,2,119.00

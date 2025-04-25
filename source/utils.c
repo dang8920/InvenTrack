@@ -116,16 +116,18 @@ void getPassword(char *password, int maxLength){
         struct termios oldt, newt;
         tcgetattr(STDIN_FILENO, &oldt);
         newt = oldt;
-        newt.c_lflag &= ~(ECHO);
+        newt.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
         while((ch = getchar()) != '\n' && i < maxLength - 1){
             if(ch == 127 || ch == 8){
                 if(i > 0){
                     i--; printf("\b \b");
+                    fflush(stdout);
                 }
             } else {
                 password[i++] = ch;
                 printf("*");
+                fflush(stdout);
             }
         }
         tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
