@@ -1,4 +1,4 @@
-1,Banana,1928,0.35
+1,Banana,4,0.35
 2,Strawberries,297,2.99
 3,Avocado,2867,0.71
 4,Green Grapes,125,3.99
